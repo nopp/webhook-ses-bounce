@@ -11,6 +11,7 @@ import (
 type config struct {
 	TableName string `json:"tableName"`
 	AwsRegion string `json:"awsRegion"`
+	HostPort  string `json:"hostPort"`
 }
 
 // LoadConfiguration - Read config from config.json
