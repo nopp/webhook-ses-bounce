@@ -2,10 +2,10 @@ package bounce
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 	"time"
+	"webhook-ses-bounce/common"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -13,82 +13,75 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
 
-type bounce struct {
-	NotificationType string `json:"notificationType"`
-	Bounce           struct {
-		BounceType        string `json:"bounceType"`
-		BounceSubType     string `json:"bounceSubType"`
+// Received from Amazon SES + SNS Topic (subscription)
+type rawBounce struct {
+	FeedbackID string
+	Item       struct {
 		BouncedRecipients []struct {
 			EmailAddress   string `json:"emailAddress"`
 			Action         string `json:"action"`
 			Status         string `json:"status"`
 			DiagnosticCode string `json:"diagnosticCode"`
 		} `json:"bouncedRecipients"`
-		Timestamp    time.Time `json:"timestamp"`
-		FeedbackID   string    `json:"feedbackId"`
-		RemoteMtaIP  string    `json:"remoteMtaIp"`
-		ReportingMTA string    `json:"reportingMTA"`
+		Timestamp  time.Time `json:"timestamp"`
+		FeedbackID string    `json:"feedbackId"`
 	} `json:"bounce"`
 	Mail struct {
-		Timestamp        time.Time `json:"timestamp"`
-		Source           string    `json:"source"`
-		SourceArn        string    `json:"sourceArn"`
-		SourceIP         string    `json:"sourceIp"`
-		SendingAccountID string    `json:"sendingAccountId"`
-		MessageID        string    `json:"messageId"`
-		Destination      []string  `json:"destination"`
-		HeadersTruncated bool      `json:"headersTruncated"`
-		Headers          []struct {
-			Name  string `json:"name"`
-			Value string `json:"value"`
-		} `json:"headers"`
-		CommonHeaders struct {
-			From      []string `json:"from"`
-			Date      string   `json:"date"`
-			To        []string `json:"to"`
-			MessageID string   `json:"messageId"`
-			Subject   string   `json:"subject"`
-		} `json:"commonHeaders"`
+		Source   string `json:"source"`
+		SourceIP string `json:"sourceIp"`
 	} `json:"mail"`
 }
 
-// NewBounce lala
-func NewBounce(w http.ResponseWriter, r *http.Request) {
+// Bounced recipients informations
+type bouncedrecipients struct {
+	EmailAddress   string `json:"email"`
+	Timestamp      string `json:"timestamp"`
+	DiagnosticCode string `json:"diagnosticCode"`
+	From           string `json:"source"`
+	Description    string `json:"description"`
+}
 
-	config := &aws.Config{
-		Region:   aws.String("sa-east-1"),
-		Endpoint: aws.String("http://localhost:8000"),
+// PutBounce - responsible for put bounce on DynamoDB
+func PutBounce(w http.ResponseWriter, r *http.Request) {
+
+	var rb rawBounce
+
+	config := common.LoadConfiguration()
+
+	awsConfig := &aws.Config{
+		Region: aws.String(config.AwsRegion),
 	}
 
-	var t1 bounce
+	_ = json.NewDecoder(r.Body).Decode(&rb)
 
-	_ = json.NewDecoder(r.Body).Decode(&t1)
-
-	tableName := "bounces"
-
-	sess := session.Must(session.NewSession(config))
+	sess := session.Must(session.NewSession(awsConfig))
 	svc := dynamodb.New(sess)
 
-	av, err := dynamodbattribute.MarshalMap(t1)
-	if err != nil {
-		fmt.Println("Got error marshalling map:")
-		fmt.Println(err.Error())
-		os.Exit(1)
+	var b bouncedrecipients
+	for _, brData := range rb.Item.BouncedRecipients {
+		b.DiagnosticCode = brData.Status
+		b.EmailAddress = brData.EmailAddress
+		b.Timestamp = rb.Item.Timestamp.String()
+		b.From = rb.Mail.Source
+		b.Description = brData.DiagnosticCode
+
+		av, err := dynamodbattribute.MarshalMap(b)
+		if err != nil {
+			common.Message(w, err.Error())
+			os.Exit(1)
+		}
+
+		input := &dynamodb.PutItemInput{
+			Item:      av,
+			TableName: aws.String(config.TableName),
+		}
+
+		_, err = svc.PutItem(input)
+		if err != nil {
+			common.Message(w, err.Error())
+		}
+
+		common.Message(w, "Successfully added to table "+config.TableName)
+
 	}
-
-	input := &dynamodb.PutItemInput{
-		Item:      av,
-		TableName: aws.String(tableName),
-	}
-
-	_, err = svc.PutItem(input)
-	if err != nil {
-		fmt.Println("Got error calling PutItem:")
-		fmt.Println(err.Error())
-	}
-
-	fmt.Println("Successfully added to table " + tableName)
-
-	fmt.Println(t1)
-	json.NewEncoder(w).Encode(t1)
 }

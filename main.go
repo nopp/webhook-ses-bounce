@@ -10,6 +10,6 @@ import (
 
 func main() {
 	router := mux.NewRouter()
-	router.HandleFunc("/newbounce", bounce.NewBounce).Methods("POST")
+	router.HandleFunc("/newbounce", bounce.PutBounce).Methods("POST")
 	log.Fatal(http.ListenAndServe("0.0.0.0:8181", router))
 }
