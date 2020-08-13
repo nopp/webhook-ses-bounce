@@ -76,7 +76,6 @@ func NewBounce(w http.ResponseWriter, r *http.Request) {
 		os.Exit(1)
 	}
 
-	// Create item in table Movies
 	input := &dynamodb.PutItemInput{
 		Item:      av,
 		TableName: aws.String(tableName),
