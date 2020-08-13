@@ -15,20 +15,17 @@ import (
 
 // Received from Amazon SES + SNS Topic (subscription)
 type rawBounce struct {
-	FeedbackID string
-	Item       struct {
+	Item struct {
 		BouncedRecipients []struct {
 			EmailAddress   string `json:"emailAddress"`
 			Action         string `json:"action"`
 			Status         string `json:"status"`
 			DiagnosticCode string `json:"diagnosticCode"`
 		} `json:"bouncedRecipients"`
-		Timestamp  time.Time `json:"timestamp"`
-		FeedbackID string    `json:"feedbackId"`
+		Timestamp time.Time `json:"timestamp"`
 	} `json:"bounce"`
 	Mail struct {
-		Source   string `json:"source"`
-		SourceIP string `json:"sourceIp"`
+		Source string `json:"source"`
 	} `json:"mail"`
 }
 
