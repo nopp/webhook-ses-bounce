@@ -4,7 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
 
 type bounce struct {
@@ -49,9 +55,40 @@ type bounce struct {
 // NewBounce lala
 func NewBounce(w http.ResponseWriter, r *http.Request) {
 
+	config := &aws.Config{
+		Region:   aws.String("sa-east-1"),
+		Endpoint: aws.String("http://localhost:8000"),
+	}
+
 	var t1 bounce
 
 	_ = json.NewDecoder(r.Body).Decode(&t1)
+
+	tableName := "bounces"
+
+	sess := session.Must(session.NewSession(config))
+	svc := dynamodb.New(sess)
+
+	av, err := dynamodbattribute.MarshalMap(t1)
+	if err != nil {
+		fmt.Println("Got error marshalling map:")
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+
+	// Create item in table Movies
+	input := &dynamodb.PutItemInput{
+		Item:      av,
+		TableName: aws.String(tableName),
+	}
+
+	_, err = svc.PutItem(input)
+	if err != nil {
+		fmt.Println("Got error calling PutItem:")
+		fmt.Println(err.Error())
+	}
+
+	fmt.Println("Successfully added to table " + tableName)
 
 	fmt.Println(t1)
 	json.NewEncoder(w).Encode(t1)
