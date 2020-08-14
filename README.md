@@ -38,5 +38,7 @@
   }
 ```
 ### 3) Create an Amazon SNS Topic with subscription to Lambda.
-### 4) To publish on Amazon Lambda
+### 4) Enable on Amazon SES
+```Bounce Notifications SNS Topic:```
+### 5) To publish on Amazon Lambda
 ``` make && make install ```
