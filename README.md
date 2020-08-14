@@ -37,6 +37,6 @@
       ]
   }
 ```
-### 3) Create an Amazon SNS Topic and subscription to Lambda.
+### 3) Create an Amazon SNS Topic with subscription to Lambda.
 ### 4) To publish on Amazon Lambda
 ``` make && make install ```
