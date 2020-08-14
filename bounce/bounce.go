@@ -1,19 +1,19 @@
 package bounce
 
 import (
+	"context"
 	"encoding/json"
-	"net/http"
+	"log"
 	"os"
 	"time"
-	"webhook-ses-bounce/common"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
 
-// Received from Amazon SES + SNS Topic (subscription)
 type rawBounce struct {
 	Item struct {
 		BouncedRecipients []struct {
@@ -39,46 +39,53 @@ type bouncedrecipients struct {
 }
 
 // PutBounce - responsible for put bounce on DynamoDB
-func PutBounce(w http.ResponseWriter, r *http.Request) {
-
-	var rb rawBounce
-
-	config := common.LoadConfiguration()
+func PutBounce(ctx context.Context, snsEvent events.SNSEvent) {
 
 	awsConfig := &aws.Config{
-		Region: aws.String(config.AwsRegion),
+		Region: aws.String("sa-east-1"),
 	}
 
-	_ = json.NewDecoder(r.Body).Decode(&rb)
+	for _, record := range snsEvent.Records {
+		snsRecord := record.SNS
 
-	sess := session.Must(session.NewSession(awsConfig))
-	svc := dynamodb.New(sess)
+		in := []byte(snsRecord.Message)
 
-	var b bouncedrecipients
-	for _, brData := range rb.Item.BouncedRecipients {
-		b.DiagnosticCode = brData.Status
-		b.EmailAddress = brData.EmailAddress
-		b.Timestamp = rb.Item.Timestamp.String()
-		b.From = rb.Mail.Source
-		b.Description = brData.DiagnosticCode
+		var rb rawBounce
 
-		av, err := dynamodbattribute.MarshalMap(b)
-		if err != nil {
-			common.Message(w, err.Error())
-			os.Exit(1)
+		if err := json.Unmarshal(in, &rb); err != nil {
+			panic(err)
 		}
 
-		input := &dynamodb.PutItemInput{
-			Item:      av,
-			TableName: aws.String(config.TableName),
-		}
+		sess := session.Must(session.NewSession(awsConfig))
+		svc := dynamodb.New(sess)
 
-		_, err = svc.PutItem(input)
-		if err != nil {
-			common.Message(w, err.Error())
-		}
+		var b bouncedrecipients
+		for _, brData := range rb.Item.BouncedRecipients {
+			b.DiagnosticCode = brData.Status
+			b.EmailAddress = brData.EmailAddress
+			b.Timestamp = rb.Item.Timestamp.String()
+			b.From = rb.Mail.Source
+			b.Description = brData.DiagnosticCode
 
-		common.Message(w, "Successfully added to table "+config.TableName)
+			av, err := dynamodbattribute.MarshalMap(b)
+			if err != nil {
+				log.Println(err.Error())
+				os.Exit(1)
+			}
+
+			input := &dynamodb.PutItemInput{
+				Item:      av,
+				TableName: aws.String("prod-sesBounces"),
+			}
+
+			_, err = svc.PutItem(input)
+			if err != nil {
+				log.Println(err.Error())
+			}
+
+			log.Println("Successfully added to table prod-sesBounces")
+
+		}
 
 	}
 }
