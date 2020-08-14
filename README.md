@@ -1,8 +1,8 @@
 # Webhook SES Bouce - AWS Lambda function
 
-### 1) Create a Amazon DynamoDB with keys:
+### 1) Create an Amazon DynamoDB with keys:
 ```Partition Key: email(string) and Sort Key: timestamp(string)```
-### 2) Create a Amazon Lambda function
+### 2) Create an Amazon Lambda function
   `Edit the table name and region on bounce.go`
   
   `Region: aws.String("sa-east-1")`
@@ -37,6 +37,6 @@
       ]
   }
 ```
-### 3) Create Amazon SNS Topic and subscription to Lambda.
+### 3) Create an Amazon SNS Topic and subscription to Lambda.
 ### 4) To publish on Amazon Lambda
 ``` make && make install ```
