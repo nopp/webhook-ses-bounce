@@ -1,6 +1,7 @@
 # Webhook SES Bouce - AWS Lambda function
 
-### 1) Create a Amazon DynamoDB with Partition Key: email(string) and Sort Key: timestamp(string)
+### 1) Create a Amazon DynamoDB with keys:
+```Partition Key: email(string) and Sort Key: timestamp(string)```
 ### 2) Create a Amazon Lambda function
   `Edit the table name and region on bounce.go`
   
@@ -33,4 +34,5 @@
         }
     ]
 }```
+
 ### 3) Create Amazon SNS Topic and subscription to Lambda.
