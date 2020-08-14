@@ -9,30 +9,32 @@
   `TableName: aws.String("prod-sesBounces")`
   
   Lambda role:
-  ```{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "ReadWriteTable",
-            "Effect": "Allow",
-            "Action": [
-                "dynamodb:BatchGetItem",
-                "dynamodb:GetItem",
-                "dynamodb:Query",
-                "dynamodb:Scan",
-                "dynamodb:BatchWriteItem",
-                "dynamodb:PutItem",
-                "dynamodb:UpdateItem"
-            ],
-            "Resource": "arn:aws:dynamodb:*:*:table/prod-sesBounces"
-        },
-        {
-            "Sid": "CreateLogGroup",
-            "Effect": "Allow",
-            "Action": "logs:CreateLogGroup",
-            "Resource": "*"
-        }
-    ]
-}```
-
+  
+  ```
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+          {
+              "Sid": "ReadWriteTable",
+              "Effect": "Allow",
+              "Action": [
+                  "dynamodb:BatchGetItem",
+                  "dynamodb:GetItem",
+                  "dynamodb:Query",
+                  "dynamodb:Scan",
+                  "dynamodb:BatchWriteItem",
+                  "dynamodb:PutItem",
+                  "dynamodb:UpdateItem"
+              ],
+              "Resource": "arn:aws:dynamodb:*:*:table/prod-sesBounces"
+          },
+          {
+              "Sid": "CreateLogGroup",
+              "Effect": "Allow",
+              "Action": "logs:CreateLogGroup",
+              "Resource": "*"
+          }
+      ]
+  }
+```
 ### 3) Create Amazon SNS Topic and subscription to Lambda.
