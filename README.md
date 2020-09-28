@@ -1,5 +1,7 @@
 # Webhook SES Bouce - AWS Lambda function
 
+Send SES bounces to DynamoDB
+
 ### 1) Create an Amazon DynamoDB with keys:
 ```Partition Key: email(string) and Sort Key: timestamp(string)```
 ### 2) Create an Amazon Lambda function
